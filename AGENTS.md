@@ -171,6 +171,7 @@ atomic `mv`. When woken, handle the batch under this contract:
   formulas (the delimiters are stripped and the content shows as-is).
 - The script already lit the "typing…" indicator on arrival; refresh it if
   composing takes >30s and stop it after sending.
+- Shared-context snapshot (cold start only): before composing, also read `~/hooks/state/shared-context.md` when it exists and is fresher than 6 hours — it carries recent main-chat decisions and open topics not yet in the long-term memory files. A missing, stale, or corrupt snapshot is silently skipped, and the batch proceeds as if there were none; if it contradicts the long-term memory files, the memory files win. Never re-read it while warm — your context is already current.
 - **Stay warm for follow-ups**: after cleanup, run
   `examples/muse-hook/ilink-warm-wait.sh` instead of ending the turn. It
   maintains the warm marker the watch script checks (while its heartbeat
