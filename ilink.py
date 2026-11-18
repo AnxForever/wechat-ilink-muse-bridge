@@ -3298,23 +3298,33 @@ def cmd_rotate_chatlog():
     return 0
 
 
+def _backup_candidates(target):
+    """Every '<target>.bak-*' file next to the target, in no order."""
+    d = os.path.dirname(target) or "."
+    base = os.path.basename(target) + ".bak-"
+    try:
+        names = os.listdir(d)
+    except OSError:
+        return []
+    return [os.path.join(d, n) for n in names
+            if n.startswith(base) and os.path.isfile(os.path.join(d, n))]
+
+
 def _newest_backup(target):
     """Newest '<target>.bak-*' file by mtime, or None. Covers both
     backup schemes: update-to's '.bak-<tag>' and the port script's
     '.bak-<date>-<label>'. Pre-rollback copies ('.bak-pre-rollback-*')
     are valid sources too — rolling back twice returns to the state
     before the first rollback."""
-    d = os.path.dirname(target) or "."
-    base = os.path.basename(target) + ".bak-"
-    try:
-        names = os.listdir(d)
-    except OSError:
-        return None
-    cands = [os.path.join(d, n) for n in names
-             if n.startswith(base) and os.path.isfile(os.path.join(d, n))]
+    cands = _backup_candidates(target)
     if not cands:
         return None
-    return max(cands, key=lambda p: os.stat(p).st_mtime)
+    # mtime first, then the name: a copy and the file it was copied from
+    # can land in the same timestamp tick, and max() would otherwise pick
+    # whichever came first out of listdir — so the same pair of backups
+    # could resolve two different ways on two runs.
+    return max(cands, key=lambda p: (os.stat(p).st_mtime_ns,
+                                     os.path.basename(p)))
 
 
 def cmd_rollback(hook_dir=None, script_path=None):
@@ -3324,7 +3334,8 @@ def cmd_rollback(hook_dir=None, script_path=None):
     must have a backup and every backup must verify (compile check
     for ilink.py, bash -n for hook scripts) before anything is
     swapped. Current files are first copied to
-    '.bak-pre-rollback-<epoch>' so a rollback is itself reversible.
+    '.bak-pre-rollback-<epoch>' (with a '-<n>' suffix when a copy from
+    the same second already exists) so a rollback is itself reversible.
     State files are never touched (same rule as update-to), and the
     worker contract (AGENTS.md) is not rolled back — it is manual
     anyway. After swapping, the restored script's health --offline
@@ -3357,8 +3368,27 @@ def cmd_rollback(hook_dir=None, script_path=None):
         plan.append((kind, target, backup, content))
     for kind, target, backup, content in plan:
         if os.path.exists(target):
-            _copy_file(target,
-                       target + f".bak-pre-rollback-{int(time.time())}")
+            # Never overwrite a pre-rollback copy: two rollbacks inside
+            # the same second would otherwise leave only the newer one,
+            # and the state before the first rollback would be gone.
+            stamp = int(time.time())
+            pre = target + f".bak-pre-rollback-{stamp}"
+            n = 1
+            while os.path.exists(pre):
+                n += 1
+                pre = target + f".bak-pre-rollback-{stamp}-{n:03d}"
+            _copy_file(target, pre)
+            # This copy is now the newest state there is, so it must win
+            # the next _newest_backup() — including when the copy and
+            # every older backup land in the same timestamp tick. The
+            # bump is a microsecond, large enough to survive a filesystem
+            # that rounds timestamps but far too small to be seen.
+            try:
+                newest = max([os.stat(p).st_mtime_ns
+                              for p in _backup_candidates(target)] or [0])
+                os.utime(pre, ns=(os.stat(pre).st_atime_ns, newest + 1000))
+            except OSError:
+                pass
         tmp = target + f".tmp-rollback-{os.getpid()}"
         try:
             mode = os.stat(target).st_mode & 0o777

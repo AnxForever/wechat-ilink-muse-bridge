@@ -87,6 +87,25 @@ class RollbackTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(self._read(self.script), "x = 1\n")
 
+    def test_second_rollback_survives_equal_timestamps(self):
+        # On filesystems with coarse timestamps the original file, the
+        # backup and the pre-rollback copy can all share one mtime tick.
+        # Picking a backup must still be deterministic, and the second
+        # rollback must still return to the state before the first.
+        backup = self._backup(self.script, "x = 2\n", ".bak-v1.0.0")
+        st = os.stat(self.script)
+        os.utime(backup, ns=(st.st_atime_ns, st.st_mtime_ns))
+        self._run(script_path=self.script)
+        self._run(script_path=self.script)
+        self.assertEqual(self._read(self.script), "x = 1\n")
+        # And a third rollback keeps going back and forth, never losing
+        # a pre-rollback copy to a same-second name collision.
+        self._run(script_path=self.script)
+        self.assertEqual(self._read(self.script), "x = 2\n")
+        pre = [n for n in os.listdir(self.script_dir)
+               if n.startswith("ilink.py.bak-pre-rollback-")]
+        self.assertEqual(len(pre), 3)
+
     def test_no_backup_fails_without_touching(self):
         rc, out = self._run(script_path=self.script)
         self.assertEqual(rc, 1)
