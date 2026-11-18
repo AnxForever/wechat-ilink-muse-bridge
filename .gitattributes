@@ -1,0 +1,5 @@
+# Shell scripts and the hook drivers are run on Linux/macOS and by bash.
+# A CRLF checkout makes bash fail with "$'\r': command not found" — keep
+# these LF everywhere, including on Windows checkouts.
+*.sh text eol=lf
+*.py text eol=lf
