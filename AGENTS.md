@@ -205,7 +205,9 @@ atomic `mv`. When woken, handle the batch under this contract:
   reply splits into several bubbles, suffix each bubble's key with its
   bubble number (`<message_id>-1`, `<message_id>-2`, …), or the later
   bubbles will be suppressed as duplicates.
-- On `token_expired`, tell the user once that a re-scan is needed.
+- On `token_expired`, tell the user a re-scan is needed. The alert loop
+  below decides when you are woken again (first notice, then hourly);
+  do not invent your own reminder cadence on top of it.
 - The script also runs a closed alert loop (see
   `examples/muse-hook/README.md`): an unfixed expiry is re-reported
   hourly (`token_expired` with `repeat: true`), 10+ minutes of poll

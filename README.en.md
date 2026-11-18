@@ -98,8 +98,9 @@ keeps a stranger from talking their way onto the allowlist.
 - **health self-check** — `ilink.py health` shows login age, a live token
   probe, queue backlog and the last poll error in one command, with
   exit codes 0/1/2 for monitoring
-- **Token expiry nags once** — on expiry a marker file is written and the
-  user is asked to re-scan exactly once
+- **Token expiry does not nag on every poll** — a marker file is written on
+  expiry; the first notice fires immediately, then at most once an hour
+  until the QR code is re-scanned
 - **Quoted-message restoration** — when you quote a message and ask about
   it in WeChat, the bot sees the quoted original (text or file): poll
   keeps the server's quote reference and a local id-to-original cache
@@ -332,8 +333,8 @@ The data directory defaults to `./data/` and can be overridden with the
 - **Session lifetime is uncertain**: early community reports suggested
   roughly 24 hours, but in production a single login here has stayed valid
   for 3+ days (Oct 2026); it may vary by account. Expiry means a human has
-  to re-scan the QR code (this repo only implements "notify once" —
-  re-scanning is still manual).
+  to re-scan the QR code (this repo only implements "first notice + hourly
+  repeat" — re-scanning is still manual).
 - **Bots only see messages sent to the bot**: iLink is a separate bot
   identity. It cannot see your main account's messages, contacts, or
   Moments — the official protocol simply has no such endpoints. Anyone
