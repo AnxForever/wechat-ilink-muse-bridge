@@ -147,6 +147,8 @@ Claude Code 类（[crazynomad/weixin-claude-bot](https://github.com/crazynomad/w
 | --- | --- | --- |
 | 独立守护进程（示例） | 任何服务器/VPS | `daemon.py` |
 | Muse hook | Muse 运行时（生产在用） | `examples/muse-hook/` |
+| Muse hook（QQ 通道） | 换成 QQ 官方机器人 | `examples/qq-bot/` |
+| Muse hook（飞书通道） | 换成飞书自建应用（长连接，无需公网） | `examples/feishu-bot/` |
 
 > 注：`daemon.py` 是**示例驱动**，为展示协议与最小可运行实现而写：处理完成
 > 后才提交游标，崩溃或 handler 异常的窗口内同一批消息会被重投（至少一次、

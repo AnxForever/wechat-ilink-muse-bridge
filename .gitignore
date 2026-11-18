@@ -1,5 +1,7 @@
 # data/ 里是登录凭证和聊天数据，绝对不要提交
 data/
+# 各通道适配器的默认数据目录（token / 凭据是活的调用凭证）
+examples/*/data/
 session.json
 contacts.json
 chatlog.md

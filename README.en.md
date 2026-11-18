@@ -196,6 +196,8 @@ lock exits without polling or waking.
 | --- | --- | --- |
 | Standalone daemon (example) | any server / VPS | `daemon.py` |
 | Muse hook | the Muse runtime (used in production) | `examples/muse-hook/` |
+| Muse hook (QQ channel) | QQ official bots instead of WeChat | `examples/qq-bot/` |
+| Muse hook (Feishu channel) | a Feishu custom app over a long connection | `examples/feishu-bot/` |
 
 > Note: `daemon.py` is an **example driver**, written to show the protocol
 > and the smallest runnable loop. It commits only after handling, so a
